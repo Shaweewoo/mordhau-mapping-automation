@@ -1,0 +1,75 @@
+.table-entry-v-box {
+    -fx-background-color: #37474f;
+}
+
+.center-left-alignment {
+    -fx-alignment: center-left;
+}
+
+.padding {
+    -fx-padding: 10;
+}
+
+.spacing {
+    -fx-spacing: 10;
+}
+
+.grid-pane {
+    -fx-hgap: 20.0;
+    -fx-vgap: 20.0;
+}
+
+.scroll-pane {
+    -fx-fit-to-width: true;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .scroll-bar > .increment-button, .scroll-pane > .scroll-bar > .decrement-button {
+    /*-fx-background-color: #455a64;*/
+}
+
+.text-field {
+    -fx-highlight-fill: #7e57c2;
+}
+
+.text-field, .button, .slider > .track, .progress-bar > .track, .scroll-pane > .scroll-bar > .track {
+    -fx-background-color: #455a64;
+    -fx-text-fill: #eceff1;
+    -fx-background-radius: 0;
+}
+
+.slider > .thumb, .scroll-pane > .scroll-bar > .thumb {
+    -fx-background-color: #78909c;
+    -fx-background-insets: 0;
+    -fx-background-radius: 2;
+}
+
+.slider > .axis {
+    -fx-tick-label-fill: #90a4ae;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: #eceff1;
+}
+
+.button:hover {
+    -fx-background-color: #546e7a;
+}
+
+.button:pressed {
+    -fx-background-color: #607d8b;
+}
+
+.label {
+    -fx-text-fill: #eceff1;
+}
+
+.main-container {
+    -fx-background-color: #263238;
+    -fx-font-size: 14;
+}
