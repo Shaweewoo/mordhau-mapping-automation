@@ -63,7 +63,7 @@ public class MappingAutomation extends Application {
 
         var icon = getImage("icon.png");
         if (icon != null) stage.getIcons().add(icon);
-        stage.setTitle("Mordhau Mapping Automation V1 - By Shaweewoo");
+        stage.setTitle("Mordhau Mapping Automation v0.3 - By Shaweewoo");
 
         m_MainGrid = new GridPane();
         m_MainGrid.getStyleClass().addAll("grid-pane");
@@ -84,14 +84,15 @@ public class MappingAutomation extends Application {
                     }
                 }
             } catch (IOException exception) {
-                exception.printStackTrace();
+                System.out.println(String.format("Failed to read default config %s", exception.getLocalizedMessage()));
             }
         }
 
         String
                 binaryPath = defaultPaths.getOrDefault("BinaryDirectory", DEFAULT_UE4_4_21_BINARY_PATH),
                 mordhauInstallPath = defaultPaths.getOrDefault("MordhauInstallDirectory", DEFAULT_MORDHAU_INSTALL_PATH),
-                unrealProjectPath = defaultPaths.getOrDefault("UnrealProjectDirectory", Paths.get(System.getProperty("user.home"), "Documents", "Unreal Projects").toString());
+                unrealProjectPath = defaultPaths.getOrDefault("UnrealProjectDirectory", Paths.get(System.getProperty("user.home"), "Documents", "Unreal Projects").toString()),
+                customCopyPath = defaultPaths.getOrDefault("UnrealProjectCustomCopyDirectory", null);
 
         var binaryLocationEntry = new TextFieldWithLabel("Unreal Engine 4.21 Binary Location", binaryPath, new BrowseButton());
         addRow(binaryLocationEntry);
@@ -99,8 +100,11 @@ public class MappingAutomation extends Application {
         addRow(mordhauInstallEntry);
         var mapFolderEntry = new TextFieldWithLabel("Map Folder Location", unrealProjectPath, new BrowseButton());
         addRow(mapFolderEntry);
+        var customFolderEntry = new TextFieldWithLabel("Custom Copy Folder", customCopyPath, new BrowseButton());
+        addRow(customFolderEntry);
 
         var output = new Label("Console Output Will Appear Here");
+        output.setWrapText(true);
         var outputScroll = new ScrollPane(output);
         // Crude way to make it auto-scroll
         outputScroll.vvalueProperty().bind(output.heightProperty());
@@ -158,7 +162,7 @@ public class MappingAutomation extends Application {
                                 exception.printStackTrace();
                             }
                             System.out.println("Finished cooking... Supposedly");
-                            var cookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", "MordhauMap", "Content", "Dusk").toFile();
+                            var cookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", "MordhauMap", "Content", mapName.toString()).toFile();
                             var mordhauMapPath = Paths.get(mordhauInstallPath, "Mordhau", "Content", "Mordhau", "Maps", mapName.toString());
                             boolean madeDirectory = mordhauMapPath.toFile().mkdir();
                             if (madeDirectory) {
@@ -192,7 +196,7 @@ public class MappingAutomation extends Application {
         }).start());
 
         var buttonGroup = new HBox(cookAndCopy);
-        buttonGroup.getStyleClass().add("spacing");
+        buttonGroup.getStyleClass().add("spacSing");
 
         var mainContainer = new VBox(m_MainGrid, new Separator(), buttonGroup, outputScroll);
         mainContainer.getStyleClass().addAll("main-container", "spacing", "padding");
