@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MappingAutomation extends Application {
 
     private static final String
+            VERSION = "v0.4",
             DEFAULT_MORDHAU_INSTALL_PATH = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mordhau",
             DEFAULT_UE4_4_21_BINARY_PATH = "C:\\Program Files\\Epic Games\\UE_4.21\\Engine\\Binaries\\Win64";
     private static int s_RowIndex;
@@ -63,7 +64,7 @@ public class MappingAutomation extends Application {
 
         var icon = getImage("icon.png");
         if (icon != null) stage.getIcons().add(icon);
-        stage.setTitle("Mordhau Mapping Automation v0.3 - By Shaweewoo");
+        stage.setTitle(String.format("Mordhau Mapping Automation %s - By Shaweewoo", VERSION));
 
         m_MainGrid = new GridPane();
         m_MainGrid.getStyleClass().addAll("grid-pane");
@@ -84,7 +85,7 @@ public class MappingAutomation extends Application {
                     }
                 }
             } catch (IOException exception) {
-                System.out.println(String.format("Failed to read default config %s", exception.getLocalizedMessage()));
+                System.out.println(String.format("Failed to read default config %s", exception));
             }
         }
 
@@ -92,7 +93,7 @@ public class MappingAutomation extends Application {
                 binaryPath = defaultPaths.getOrDefault("BinaryDirectory", DEFAULT_UE4_4_21_BINARY_PATH),
                 mordhauInstallPath = defaultPaths.getOrDefault("MordhauInstallDirectory", DEFAULT_MORDHAU_INSTALL_PATH),
                 unrealProjectPath = defaultPaths.getOrDefault("UnrealProjectDirectory", Paths.get(System.getProperty("user.home"), "Documents", "Unreal Projects").toString()),
-                customCopyPath = defaultPaths.getOrDefault("UnrealProjectCustomCopyDirectory", null);
+                customCopyPath = defaultPaths.getOrDefault("UnrealProjectCustomCopyDirectory", "");
 
         var binaryLocationEntry = new TextFieldWithLabel("Unreal Engine 4.21 Binary Location", binaryPath, new BrowseButton());
         addRow(binaryLocationEntry);
@@ -100,12 +101,13 @@ public class MappingAutomation extends Application {
         addRow(mordhauInstallEntry);
         var mapFolderEntry = new TextFieldWithLabel("Map Folder Location", unrealProjectPath, new BrowseButton());
         addRow(mapFolderEntry);
-        var customFolderEntry = new TextFieldWithLabel("Custom Copy Folder", customCopyPath, new BrowseButton());
+        var customFolderEntry = new TextFieldWithLabel("Custom Copy Folder", customCopyPath);
         addRow(customFolderEntry);
 
         var output = new Label("Console Output Will Appear Here");
         output.setWrapText(true);
         var outputScroll = new ScrollPane(output);
+        var outputText = new StringBuilder();
         // Crude way to make it auto-scroll
         outputScroll.vvalueProperty().bind(output.heightProperty());
 
@@ -117,8 +119,10 @@ public class MappingAutomation extends Application {
             if (!executionMutex.tryLock()) {
                 return;
             }
+            outputText.setLength(0);
+            Runnable updateText = () -> output.setText(outputText.toString());
             // Run later allows us to interact with JavaFX from our own thread, the library is not concurrent
-            Platform.runLater(() -> output.setText(""));
+            Platform.runLater(updateText);
             try {
                 var exe = Paths.get(binaryLocationEntry.getTextField().getText(), "UE4Editor.exe");
                 var mapPath = Paths.get(mapFolderEntry.getTextField().getText());
@@ -147,14 +151,15 @@ public class MappingAutomation extends Application {
                             var errorOutput = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                             String outputLine;
                             while ((outputLine = standardOutput.readLine()) != null) {
-                                final String copiedLine = outputLine;
-                                System.out.println(copiedLine);
-                                Platform.runLater(() -> output.setText(output.getText() + "\n" + copiedLine));
+                                outputText.append(outputLine);
+                                outputText.append("\n");
+                                Platform.runLater(updateText);
                             }
                             while ((outputLine = errorOutput.readLine()) != null) {
                                 final String copiedLine = outputLine;
-                                System.out.println(copiedLine);
-                                Platform.runLater(() -> output.setText(output.getText() + "\n" + copiedLine));
+                                outputText.append(outputLine);
+                                outputText.append("\n");
+                                Platform.runLater(updateText);
                             }
                             try {
                                 process.waitFor();
@@ -162,41 +167,34 @@ public class MappingAutomation extends Application {
                                 exception.printStackTrace();
                             }
                             System.out.println("Finished cooking... Supposedly");
-                            var cookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", "MordhauMap", "Content", mapName.toString()).toFile();
-                            var mordhauMapPath = Paths.get(mordhauInstallPath, "Mordhau", "Content", "Mordhau", "Maps", mapName.toString());
-                            boolean madeDirectory = mordhauMapPath.toFile().mkdir();
-                            if (madeDirectory) {
-                                System.out.println(String.format("Made directory %s", mordhauMapPath));
-                            }
-                            if (cookedPath.exists()) {
-                                File[] mapFiles = cookedPath.listFiles();
-                                if (mapFiles != null) {
-                                    try {
-                                        for (File mapFile : mapFiles) {
-                                            var mapFileName = mapFile.toPath().getFileName();
-                                            Files.copy(mapFile.toPath(), Paths.get(mordhauMapPath.toString(), mapFileName.toString()), StandardCopyOption.REPLACE_EXISTING);
-                                            System.out.println(String.format("Copied %s to %s", mapFile.toPath(), Paths.get(mordhauMapPath.toString(), mapFileName.toString())));
-                                        }
-                                    } catch (IOException exception) {
-                                        // Usually if this happens the user is in-game
-                                        System.out.println(String.format("Error copying files over: %s", exception.getLocalizedMessage()));
-                                    }
+                            var contentCookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", "MordhauMap", "Content");
+                            var mapCookedPath = Paths.get(contentCookedPath.toString(), mapName.toString()).toFile();
+                            var mordhauContentDirectory = Paths.get(mordhauInstallPath, "Mordhau", "Content").toFile();
+                            var customContentDirectoryName = customFolderEntry.getTextField().getText();
+                            if (customContentDirectoryName != null && !customContentDirectoryName.isEmpty()) {
+                                var customCookedPath = Paths.get(contentCookedPath.toString(), customContentDirectoryName).toFile();
+                                var mordhauCustomContentDirectory = Paths.get(mordhauContentDirectory.toString(), customContentDirectoryName).toFile();
+                                if (!copyFolder(mordhauCustomContentDirectory, customCookedPath)) {
+                                    System.err.println("Something went wrong with cooked custom items.");
                                 }
-                            } else {
-                                System.out.println("Can't find cooked items!");
+                            }
+                            var mordhauMapPath = Paths.get(mordhauContentDirectory.toString(), "Mordhau", "Maps", mapName.toString()).toFile();
+                            if (!copyFolder(mordhauMapPath, mapCookedPath)) {
+                                System.err.println("Something went wrong with cooked map items.");
                             }
                         }
                     }
                 }
             } catch (Exception exception) {
-                System.out.println(String.format("Something went wrong: %s", exception.getLocalizedMessage()));
+                exception.printStackTrace();
+                System.out.println(String.format("Something went wrong: %s", exception));
             } finally {
                 executionMutex.unlock();
             }
         }).start());
 
         var buttonGroup = new HBox(cookAndCopy);
-        buttonGroup.getStyleClass().add("spacSing");
+        buttonGroup.getStyleClass().add("spacing");
 
         var mainContainer = new VBox(m_MainGrid, new Separator(), buttonGroup, outputScroll);
         mainContainer.getStyleClass().addAll("main-container", "spacing", "padding");
@@ -209,5 +207,33 @@ public class MappingAutomation extends Application {
 
         stage.setScene(scene);
         stage.show();
+    }
+
+    private boolean copyFolder(File toPath, File fromPath) {
+        var copyFiles = fromPath.listFiles();
+        if (copyFiles == null || !fromPath.exists()) {
+            System.err.println("Requested files to copy do not exist!");
+            return false;
+        }
+        if (!toPath.exists()) {
+            if (!toPath.mkdir()) {
+                System.err.println(String.format("Failed to make directory %s", toPath));
+                return false;
+            } else {
+                System.out.println(String.format("Made directory %s", toPath));
+            }
+        }
+        try {
+            for (File mapFile : copyFiles) {
+                var mapFileName = mapFile.toPath().getFileName();
+                Files.copy(mapFile.toPath(), Paths.get(toPath.toString(), mapFileName.toString()), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println(String.format("Copied %s to %s", mapFile, Paths.get(toPath.toString(), mapFileName.toString())));
+            }
+            return true;
+        } catch (IOException exception) {
+            // Usually if this happens the user is in-game
+            System.err.println(String.format("Error copying files over: %s", exception));
+        }
+        return false;
     }
 }

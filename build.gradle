@@ -2,28 +2,32 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.7'
+    id 'edu.sc.seis.launch4j' version '2.4.6'
 }
 
 group 'shaweewoo'
-version '0.2-SNAPSHOT'
+version '0.4-SNAPSHOT'
+
 
 repositories {
+    jcenter()
     mavenLocal()
     mavenCentral()
 }
 
+launch4j {
+    mainClassName = 'shaweewoo.mapping.automation.Launcher'
+//    icon = "${projectDir}/resources/icon.png"
+}
+
 javafx {
     version = "12.0.1"
+    modules = ['javafx.controls']
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
-
-javafx {
-    modules = ['javafx.controls']
-}
-
 mainClassName = 'shaweewoo.mapping.automation.MappingAutomation'
 
 jar {
