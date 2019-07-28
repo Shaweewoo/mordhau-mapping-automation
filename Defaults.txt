@@ -1,1 +1,0 @@
-UnrealProjectDirectory=C:\Users\qhdwi\Documents\Unreal Projects\MordhauMap\Content\Dusk
