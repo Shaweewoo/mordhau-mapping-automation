@@ -129,6 +129,7 @@ public class MappingAutomation extends Application {
                 if (Files.exists(exe) && Files.exists(mapPath)) {
                     // We are assuming that the map is put in Contents/<Map Name> two folders down from project
                     var projectPath = mapPath.getParent().getParent();
+                    var projectName = projectPath.getFileName().toString();
                     File[] projectFiles = projectPath.toFile().listFiles();
                     if (projectFiles != null) {
                         File unrealProjectFile = null;
@@ -167,7 +168,7 @@ public class MappingAutomation extends Application {
                                 exception.printStackTrace();
                             }
                             System.out.println("Finished cooking... Supposedly");
-                            var contentCookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", "MordhauMap", "Content");
+                            var contentCookedPath = Paths.get(projectPath.toString(), "Saved", "Cooked", "WindowsNoEditor", projectName, "Content");
                             var mapCookedPath = Paths.get(contentCookedPath.toString(), mapName.toString()).toFile();
                             var mordhauContentDirectory = Paths.get(mordhauInstallPath, "Mordhau", "Content").toFile();
                             var customContentDirectoryName = customFolderEntry.getTextField().getText();
@@ -216,7 +217,7 @@ public class MappingAutomation extends Application {
             return false;
         }
         if (!toPath.exists()) {
-            if (!toPath.mkdir()) {
+            if (!toPath.mkdirs()) {
                 System.err.println(String.format("Failed to make directory %s", toPath));
                 return false;
             } else {
